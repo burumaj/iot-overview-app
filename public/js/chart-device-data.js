@@ -13,23 +13,26 @@ $(document).ready(() => {
       this.maxLen = 50;
       this.timeData = new Array(this.maxLen);
       this.temperatureData = new Array(this.maxLen);
-      this.humidityData = new Array(this.maxLen);
+        this.humidityData = new Array(this.maxLen);
+        this.pressureData = new Array(this.maxLen);
     }
 
-    addData(time, temperature, humidity) {
+      addData(time, temperature, humidity, pressure) {
       this.timeData.push(time);
       this.temperatureData.push(temperature);
-      this.humidityData.push(humidity || null);
+        this.humidityData.push(humidity || null);
+          this.pressureData.push(pressure || null);
 
       if (this.timeData.length > this.maxLen) {
         this.timeData.shift();
         this.temperatureData.shift();
-        this.humidityData.shift();
+          this.humidityData.shift();
+          this.pressureData.shift();
       }
     }
   }
 
-  // All the devices in the list (those that have been sending telemetry)
+ // All the devices in the list (those that have been sending telemetry)
   class TrackedDevices {
     constructor() {
       this.devices = [];
@@ -77,7 +80,18 @@ $(document).ready(() => {
         pointHoverBackgroundColor: 'rgba(24, 120, 240, 1)',
         pointHoverBorderColor: 'rgba(24, 120, 240, 1)',
         spanGaps: true,
-      }
+      },
+        {
+          fill: false,
+          label: 'Pressure',
+          yAxisID: 'Pressure',
+          borderColor: 'rgba(255, 50, 0, 1)',
+          pointBoarderColor: 'rgba(255, 50, 0, 1)',
+          backgroundColor: 'rgba(255, 50, 0, 0.4)',
+          pointHoverBackgroundColor: 'rgba(255, 50, 0, 1)',
+          pointHoverBorderColor: 'rgba(255, 50, 0, 1)',
+          spanGaps: true,
+      },
     ]
   };
 
@@ -90,6 +104,10 @@ $(document).ready(() => {
           labelString: 'Temperature (ºC)',
           display: true,
         },
+          ticks: {
+              min: 0,
+              max: 35
+          },
         position: 'left',
       },
       {
@@ -99,7 +117,23 @@ $(document).ready(() => {
           labelString: 'Humidity (%)',
           display: true,
         },
+          ticks: {
+              min: 0,
+              max: 100
+          },
         position: 'right',
+      },{
+          id: 'Pressure',
+          type: 'linear',
+          scaleLabel: {
+              labelString: 'Pressure (Pa)',
+              display: true,
+          },
+          ticks: {
+              min: 99000,
+              max: 102000
+          },
+          position: 'right',
       }]
     }
   };
@@ -123,7 +157,8 @@ $(document).ready(() => {
     const device = trackedDevices.findDevice(listOfDevices[listOfDevices.selectedIndex].text);
     chartData.labels = device.timeData;
     chartData.datasets[0].data = device.temperatureData;
-    chartData.datasets[1].data = device.humidityData;
+      chartData.datasets[1].data = device.humidityData;
+      chartData.datasets[2].data = device.pressureData;
   }
   listOfDevices.addEventListener('change', OnSelectionChange, false);
 
@@ -139,7 +174,7 @@ $(document).ready(() => {
       console.log(messageData);
 
       // time and either temperature or humidity are required
-      if (!messageData.MessageDate || (!messageData.IotData.temperature && !messageData.IotData.humidity)) {
+      if (!messageData.MessageDate || (!messageData.IotData.temperature && !messageData.IotData.humidity && !messageData.IotData.pressure)) {
         return;
       }
 
@@ -147,13 +182,13 @@ $(document).ready(() => {
       const existingDeviceData = trackedDevices.findDevice(messageData.DeviceId);
 
       if (existingDeviceData) {
-        existingDeviceData.addData(messageData.MessageDate, messageData.IotData.temperature, messageData.IotData.humidity);
+          existingDeviceData.addData(messageData.MessageDate, messageData.IotData.temperature, messageData.IotData.humidity, messageData.IotData.pressure);
       } else {
         const newDeviceData = new DeviceData(messageData.DeviceId);
         trackedDevices.devices.push(newDeviceData);
         const numDevices = trackedDevices.getDevicesCount();
         deviceCount.innerText = numDevices === 1 ? `${numDevices} device` : `${numDevices} devices`;
-        newDeviceData.addData(messageData.MessageDate, messageData.IotData.temperature, messageData.IotData.humidity);
+          newDeviceData.addData(messageData.MessageDate, messageData.IotData.temperature, messageData.IotData.humidity, messageData.IotData.pressure);
 
         // add device to the UI list
         const node = document.createElement('option');
